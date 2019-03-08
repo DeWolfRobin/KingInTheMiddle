@@ -43,6 +43,10 @@
     apache2_module: name=rewrite state=present
     notify:
       - restart apache2
+  - name: Ansible delete file
+    file:
+      path: /var/www/html/index.html
+      state: absent
   - name: "Install apache2-php5"
     package: name=libapache2-mod-php state=present
   - name: "Install php-cli"
