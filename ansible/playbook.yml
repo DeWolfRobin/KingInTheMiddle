@@ -1,0 +1,58 @@
+# An example playbook by Ansible.
+# Source: https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html#playbook-language-example
+---
+- hosts: all
+  remote_user: root
+  tasks:
+  - name: Create File Structure
+    file:
+      path: "{{item}}"
+      state: directory
+    with_items:
+      - /king/loot
+      - /king/print
+      - /king/dc
+      - /king/log
+      - /king/mail
+      - /king/dns
+      - /king/payload
+  - name: Create install directory
+    file:
+      state: directory
+      path: /var/www/html
+      owner: www-data
+      group: www-data
+      mode: 0755
+  - name: Copy files to remote host
+    copy:
+      src: web/
+      dest: /var/www/html
+      owner: www-data
+      group: www-data
+      mode: 0755
+  - name: Copy etc files to remote host
+    copy:
+      src: etc/
+      dest: /etc/
+      owner: root
+      group: root
+      mode: 0755
+  - name: install apache2
+    apt: name=apache2 update_cache=yes state=latest
+  - name: enabled mod_rewrite
+    apache2_module: name=rewrite state=present
+    notify:
+      - restart apache2
+  - name: "Install apache2-php5"
+    package: name=libapache2-mod-php state=present
+  - name: "Install php-cli"
+    package: name=php-cli state=present
+  - name: "Install php-mcrypt"
+    package: name=php-mcrypt state=present
+  - name: "Install php-gd"
+    package: name=php-gd state=present
+  - name: start dnsmasq
+    command: dnsmasq
+  handlers:
+    - name: restart apache2
+      service: name=apache2 state=restarted
