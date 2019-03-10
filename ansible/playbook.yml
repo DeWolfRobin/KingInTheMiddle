@@ -16,6 +16,11 @@
       - /king/mail
       - /king/dns
       - /king/payload
+  - name: Create symbolic link
+    file:
+      src: "/var/log"
+      dest: "/king/log/system"
+      state: link
   - name: Create install directory
     file:
       state: directory
