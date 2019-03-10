@@ -1,9 +1,9 @@
-# An example playbook by Ansible.
-# Source: https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html#playbook-language-example
 ---
 - hosts: all
   remote_user: root
   tasks:
+#-----------------------------------------------
+# Setup files
   - name: Create File Structure
     file:
       path: "{{item}}"
@@ -16,25 +16,17 @@
       - /king/mail
       - /king/dns
       - /king/payload
+      - /king/payload/web
   - name: Create symbolic link
     file:
       src: "/var/log"
       dest: "/king/log/system"
       state: link
-  - name: Create install directory
-    file:
-      state: directory
-      path: /var/www/html
-      owner: www-data
-      group: www-data
-      mode: 0755
   - name: Copy files to remote host
     copy:
       src: web/
-      dest: /var/www/html
-      owner: www-data
-      group: www-data
-      mode: 0755
+      dest: /king/payload/web
+      mode: 0655
   - name: Copy etc files to remote host
     copy:
       src: etc/
@@ -42,26 +34,33 @@
       owner: root
       group: root
       mode: 0755
-  - name: install apache2
-    apt: name=apache2 update_cache=yes state=latest
-  - name: enabled mod_rewrite
-    apache2_module: name=rewrite state=present
-    notify:
-      - restart apache2
-  - name: Ansible delete file
-    file:
-      path: /var/www/html/index.html
-      state: absent
-  - name: "Install apache2-php5"
-    package: name=libapache2-mod-php state=present
+#-----------------------------------------------
+# Setup nginx
+  - name: install nginx
+    apt: name=nginx update_cache=yes
+  - name: copy nginx config file
+    copy: src=nginx/nginx.conf dest=/etc/nginx/sites-available/default
+  - name: enable configuration
+    file: >
+      dest=/etc/nginx/sites-enabled/default
+      src=/etc/nginx/sites-available/default
+      state=link
+  - name: restart nginx
+    service: name=nginx state=restarted
+#-----------------------------------------------
+# Install php
   - name: "Install php-cli"
     package: name=php-cli state=present
   - name: "Install php-mcrypt"
     package: name=php-mcrypt state=present
   - name: "Install php-gd"
     package: name=php-gd state=present
+#-----------------------------------------------
+# DNSmasq
   - name: start dnsmasq
     command: dnsmasq
+#-----------------------------------------------
+# Handlers
   handlers:
     - name: restart apache2
       service: name=apache2 state=restarted
